@@ -5,9 +5,9 @@ trainF = 200;
 step = 1;
 currentFrame = 1;
 k = 1;
-threshold = 50;
+threshold = 60;
 previous_bw = zeros([576 768]);
-alfa = 0.01; % Background computation
+alfa = 0.02; % Background computation
 path = '3DMOT2015/train/PETS09-S2L1/img1/';
 str2 = ['%s%.' num2str(6) 'd.%s'];
 
@@ -72,6 +72,7 @@ for i = 1 : step : trainF
         k = k + 1;
 end
 
+
 for i = trainF : step : totalF
         img = imread(sprintf(str2,path,i,'jpg'));
 
@@ -84,7 +85,7 @@ for i = trainF : step : totalF
         bw_final = imdilate(bw_final,se);
         se = strel('disk', 5);
         bw_final = imclose(bw_final,se);
-        bw_final = bwareaopen(bw_final, 350);
+        bw_final = bwareaopen(bw_final, 400);
         bw_image = (bw_final + previous_bw) > 0;
         previous_bw = bw_final; 
         
@@ -119,15 +120,24 @@ for i = trainF : step : totalF
         for a = 1 : num
             x_plot = [];
             y_plot = [];
+            
             for j = 1 : frameNumb
-                x_plot = [ x_plot pathing(1, j, a) ];
-                y_plot = [ y_plot pathing(2, j, a) ];
+                if pathing(1, j, a) > 0
+                    x_plot = [ x_plot pathing(1, j, a) ];
+                else
+                    x_plot = [ x_plot nan ];    
+                end
+                
+                if pathing(2, j, a) > 0
+                    y_plot = [ y_plot pathing(2, j, a) ];
+                else
+                    y_plot = [ y_plot nan ];
+                end
             end
-            if(stats(a).BoundingBox(3) / stats(a).BoundingBox(4) > 1)
-                plot(y_plot, x_plot, 'r.', 'MarkerSize', 5);
-            else
-                plot(y_plot, x_plot, 'b.', 'MarkerSize', 5);
-            end
+             
+
+            plot(y_plot, x_plot, '.', 'MarkerSize', 15);
+  
             %drawn result
             drawnow;
         end
