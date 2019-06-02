@@ -111,6 +111,7 @@ end
 figure;
 plot( precisions, recalls );
 
+figure(1);
 for i = trainF : step : totalF
     img = imread(sprintf(str2,path,i,'jpg'));
 
