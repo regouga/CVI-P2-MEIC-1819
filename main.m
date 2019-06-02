@@ -35,6 +35,7 @@ end
 
 precisions = []
 recalls = []
+ious = []
 
 for i = 1 : step : trainF
         TP = 0;
@@ -70,15 +71,15 @@ for i = 1 : step : trainF
         if num > 0
             for j = 1 : num
                 boundingBox = stats(j).BoundingBox;
-                t = text(boundingBox(1), boundingBox(2) - 12, 'Person');
+                t = text(boundingBox(1), boundingBox(2) - 12, strcat('Person', num2str(j)));
                 t.Color = [0.0 0.0 1.0];
-                t.FontSize = 16;
+                t.FontSize = 10;
                 color = 'b';
                 current = rectangle('Position', boundingBox, 'EdgeColor',color, 'LineWidth', 2);
                 current_boxes = [current_boxes ;[get(current, 'Position')]];
                 for z = 1 : size(i_table)
                     truth = rectangle('Position',[i_table.Var3(z) i_table.Var4(z) i_table.Var5(z) i_table.Var6(z)], 'EdgeColor',[1 0 0],'linewidth', 2 );
-                    truth_boxes = [current_boxes ; [get(truth, 'Position')]];
+                    truth_boxes = [truth_boxes ; [get(truth, 'Position')]];
                 end
             end
         end
@@ -102,6 +103,8 @@ for i = 1 : step : trainF
         recalls = [recalls current_recall];
         
         
+        ious = [ ious mean(max(overlapRatio)) ];
+
         drawnow;
         hold off;
         prev_num =  num;
@@ -109,7 +112,25 @@ for i = 1 : step : trainF
 end
 
 figure(3);
-scatter(recalls, precisions);
+scatter(recalls, precisions,'filled'),axis([0 1 0 1]),xlabel('Recall'),ylabel('Precision'),title('Precision - Recall Curve');
+
+th = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.40, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1];
+sum = [];
+sum2 = 0;
+
+for b = 1 : size(th)
+    sum2 = 0;
+    for c = 1 : size(ious)
+        if ious(c) > th(b)
+            sum2 = sum2 + 1;
+        end    
+    end
+    sum(end+1) = sum2;
+end
+
+figure(2);
+bar(th, (sum / size(ious))*100),xlabel('Thresholds'),ylabel('Percentage'),title('Success Plot');
+
 
 
 for i = trainF : step : totalF
