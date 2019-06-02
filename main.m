@@ -219,16 +219,7 @@ for i = trainF : step : totalF
     k = k + 1;
     index = index + 1;
 end
-figure('Name','Areas along time','NumberTitle','off');
-    hold on;
-    plot(numbers(:,1),'y-');
-    plot(numbers(:,2),'r--');
-    plot(numbers(:,3),'g:');
-    plot(numbers(:,4),'b--o');
-    plot(numbers(:,5),'k-*');
-    legend('1','2','3','4','5');
-    hold off;
-    beep;
+
     figure('Name','Centroids along time (x/y)','NumberTitle','off');
     subplot(2, 1, 1), hold on;
     for k = 1 : totalF/step
