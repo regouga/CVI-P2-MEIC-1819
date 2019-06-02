@@ -33,8 +33,13 @@ end
 %bkg = median(vid4D,4);
 %figure;imagesc(uint8(bkg));
 
+precisions = []
+recalls = []
 
 for i = 1 : step : trainF
+        TP = 0;
+        FP = 0;
+        FN = 0;
         img = imread(sprintf('3DMOT2015/train/PETS09-S2L1/img1/%.6d.jpg',i));
         i_table = T(T.Var1 == i, :);
         
@@ -78,11 +83,33 @@ for i = 1 : step : trainF
             end
         end
         overlapRatio = bboxOverlapRatio(truth_boxes, current_boxes);
+        
+        for c = 1: size(overlapRatio, 2)
+            if max(overlapRatio(:,c) > 0.5)
+                TP = TP + 1;
+            else
+                FN = FN + 1;
+            end    
+        end
+        
+        FP = size(overlapRatio,1) - TP;
+        
+        current_precision = TP / (TP + FP);
+        
+        current_recall = TP / (TP + FN);
+        
+        precisions = [precisions current_precision];
+        recalls = [recalls current_recall];
+        
+        
         drawnow;
         hold off;
         prev_num =  num;
         k = k + 1;
 end
+
+figure;
+plot( precisions, recalls );
 
 for i = trainF : step : totalF
     img = imread(sprintf(str2,path,i,'jpg'));
