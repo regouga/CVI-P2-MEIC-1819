@@ -12,7 +12,7 @@ path = '3DMOT2015/train/PETS09-S2L1/img1/';
 str2 = ['%s%.' num2str(6) 'd.%s'];
 T = readtable('3DMOT2015/train/PETS09-S2L1/gt/gt.txt');
 disp(T(1,1));
-
+maxObjs = 8;
 frameNumb = 1;
 
 vid3D = zeros([576 768 trainF/step]);
@@ -186,3 +186,80 @@ for i = trainF : step : totalF
         frameNumb = frameNumb + 1;
         k = k + 1;
 end
+
+numbers = zeros(totalF/step, maxObjs);
+centroids = zeros(maxObjs, 2, totalF/step);
+index = 1;
+for i = trainF : step : totalF
+    str1 = sprintf(str2,path,i,'jpg');
+    img = imread(str1);
+    
+    vid3D(:,:,k) = rgb2gray(img);
+    
+    bw = (abs(vid3D(:,:,k) - bkg) > threshold);
+    bw_final = bwareaopen(bw, 100);
+    bw_final = bwmorph(bw_final,'close');
+    se = strel('disk', 2);
+    bw_final = imdilate(bw_final,se);
+    se = strel('disk', 5);
+    bw_final = imclose(bw_final,se);
+    bw_final = bwareaopen(bw_final, 350);
+    bw_image = (bw_final + previous_bw) > 0;
+    previous_bw = bw_final;
+    
+    [lb, num]= bwlabel(bw_image);
+    stats = regionprops(lb);
+    objects = [stats.Area];
+    
+    for a = 1 : length(objects) % For each object
+        centroids(a,1,index) = stats(a).Centroid(1);
+        centroids(a,2,index) = stats(a).Centroid(2);
+        numbers(index,a) = objects(a);
+    end
+    
+    k = k + 1;
+    index = index + 1;
+end
+figure('Name','Areas along time','NumberTitle','off');
+    hold on;
+    plot(numbers(:,1),'y-');
+    plot(numbers(:,2),'r--');
+    plot(numbers(:,3),'g:');
+    plot(numbers(:,4),'b--o');
+    plot(numbers(:,5),'k-*');
+    legend('1','2','3','4','5');
+    hold off;
+    beep;
+    figure('Name','Centroids along time (x/y)','NumberTitle','off');
+    subplot(2, 1, 1), hold on;
+    for k = 1 : totalF/step
+        plot(k, centroids(1,1,k), 'b.',  'LineWidth', 2);
+        plot(k, centroids(2,1,k), 'ro', 'LineWidth', 2);
+        plot(k, centroids(3,1,k), 'g*', 'LineWidth', 2);
+        plot(k, centroids(4,1,k), 'y.', 'LineWidth', 2);
+        plot(k, centroids(5,1,k), 'ko', 'LineWidth', 2);
+    end
+    legend('1','2','3','4','5');
+    hold off;
+    subplot(2, 1, 2), hold on;
+    for k = 1 : totalF/step
+        plot(k, centroids(1,2,k), 'b.',  'LineWidth', 2);
+        plot(k, centroids(2,2,k), 'ro', 'LineWidth', 2);
+        plot(k, centroids(3,2,k), 'g*', 'LineWidth', 2);
+        plot(k, centroids(4,2,k), 'y.', 'LineWidth', 2);
+        plot(k, centroids(5,2,k), 'ko', 'LineWidth', 2);
+    end
+    legend('1','2','3','4','5');
+    hold off;
+
+    beep;
+    figure('Name','Centroids along time','NumberTitle','off'); hold on;
+    for k = 1 : totalF/step
+        plot(centroids(1,1,k), centroids(1,2,k), 'b.',  'LineWidth', 2);
+        plot(centroids(2,1,k), centroids(2,2,k), 'ro', 'LineWidth', 2);
+        plot(centroids(3,1,k), centroids(3,2,k), 'g*', 'LineWidth', 2);
+        plot(centroids(4,1,k), centroids(4,2,k), 'y.', 'LineWidth', 2);
+        plot(centroids(5,1,k), centroids(5,2,k), 'ko', 'LineWidth', 2);
+    end
+    legend('1','2','3','4','5');
+    hold off;
