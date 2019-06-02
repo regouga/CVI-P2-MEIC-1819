@@ -21,7 +21,7 @@ disp(f);
 
 for i = 1:seqLength
     imgfr = imread(sprintf('3DMOT2015/train/PETS09-S2L1/img1/%.6d.jpg',i));
-    imshow(imgfr);
+    imshow(imgfr); hold on;
     while f == i
         
         rectangle('Position',[top_left(1,1) top_left(1,2) area(1,1) area(1,2)], 'EdgeColor',[1 0 0],'linewidth', 2 );
