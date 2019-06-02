@@ -5,11 +5,13 @@ trainF = 200;
 step = 1;
 currentFrame = 1;
 k = 1;
-threshold = 60;
+threshold = 50;
 previous_bw = zeros([576 768]);
-alfa = 0.02; % Background computation
+alfa = 0.01;
 path = '3DMOT2015/train/PETS09-S2L1/img1/';
 str2 = ['%s%.' num2str(6) 'd.%s'];
+T = readtable('3DMOT2015/train/PETS09-S2L1/gt/gt.txt');
+disp(T(1,1));
 
 frameNumb = 1;
 
@@ -34,6 +36,7 @@ end
 
 for i = 1 : step : trainF
         img = imread(sprintf('3DMOT2015/train/PETS09-S2L1/img1/%.6d.jpg',i));
+        i_table = T(T.Var1 == i, :);
         
         vid3D(:,:,k) = rgb2gray(img);
 
@@ -55,6 +58,9 @@ for i = 1 : step : trainF
         objects = [stats.Area];
 
         imshow(img); hold on;
+        
+        truth_boxes = [];
+        current_boxes = [];
 
         if num > 0
             for j = 1 : num
@@ -63,85 +69,85 @@ for i = 1 : step : trainF
                 t.Color = [0.0 0.0 1.0];
                 t.FontSize = 16;
                 color = 'b';
-                rectangle('Position', boundingBox, 'EdgeColor',color, 'LineWidth', 2);
+                current = rectangle('Position', boundingBox, 'EdgeColor',color, 'LineWidth', 2);
+                current_boxes = [current_boxes ;[get(current, 'Position')]];
+                for z = 1 : size(i_table)
+                    truth = rectangle('Position',[i_table.Var3(z) i_table.Var4(z) i_table.Var5(z) i_table.Var6(z)], 'EdgeColor',[1 0 0],'linewidth', 2 );
+                    truth_boxes = [current_boxes ; [get(truth, 'Position')]];
+                end
             end
         end
+        overlapRatio = bboxOverlapRatio(truth_boxes, current_boxes);
         drawnow;
         hold off;
         prev_num =  num;
         k = k + 1;
 end
 
-
 for i = trainF : step : totalF
-        img = imread(sprintf(str2,path,i,'jpg'));
+    img = imread(sprintf(str2,path,i,'jpg'));
 
-        vid3D(:,:,k) = rgb2gray(img);
+    vid3D(:,:,k) = rgb2gray(img);
 
-        bw = (abs(vid3D(:,:,k) - bkg) > threshold);
-        bw_final = bwareaopen(bw, 100);
-        bw_final = bwmorph(bw_final,'close');
-        se = strel('disk', 2);
-        bw_final = imdilate(bw_final,se);
-        se = strel('disk', 5);
-        bw_final = imclose(bw_final,se);
-        bw_final = bwareaopen(bw_final, 400);
-        bw_image = (bw_final + previous_bw) > 0;
-        previous_bw = bw_final; 
-        
-        [lb, num]= bwlabel(bw_image);
-        stats = regionprops(lb);
-        objects = [stats.Area];
-        
-        centroids = zeros(length(objects), 2); % To save (sum of lines, sum of columns) for each label
-        for a = 1 : size(lb,1) % For each line
-            for j = 1 : size(lb,2) % For each column
-                if lb(a,j) ~= 0 % If it's not background
-                    centroids(lb(a,j),1) = centroids(lb(a,j),1) + a; % Sum the lines
-                    centroids(lb(a,j),2) = centroids(lb(a,j),2) + j; % Sum the columns
-                end
+    bw = (abs(vid3D(:,:,k) - bkg) > threshold);
+    bw_final = bwareaopen(bw, 100);
+    bw_final = bwmorph(bw_final,'close');
+    se = strel('disk', 2);
+    bw_final = imdilate(bw_final,se);
+    se = strel('disk', 5);
+    bw_final = imclose(bw_final,se);
+    bw_final = bwareaopen(bw_final, 350);
+    bw_image = (bw_final + previous_bw) > 0;
+    previous_bw = bw_final; 
+
+    [lb, num]= bwlabel(bw_image);
+    stats = regionprops(lb);
+    objects = [stats.Area];
+
+    centroids = zeros(length(objects), 2); % To save (sum of lines, sum of columns) for each label
+    for a = 1 : size(lb,1) % For each line
+        for j = 1 : size(lb,2) % For each column
+            if lb(a,j) ~= 0 % If it's not background
+                centroids(lb(a,j),1) = centroids(lb(a,j),1) + a; % Sum the lines
+                centroids(lb(a,j),2) = centroids(lb(a,j),2) + j; % Sum the columns
             end
         end
+    end
 
-        for l = 1 : length(objects) % For each object
-            centroids(l,1) = centroids(l,1)/objects(l); % lines' = sum(lines)/area
-            centroids(l,2) = centroids(l,2)/objects(l); % columns' = sum(columns)/area
-            pathing(1, frameNumb, l) = centroids(l,1);
-            pathing(2, frameNumb, l) = centroids(l,2);
-        end
+    for l = 1 : length(objects) % For each object
+        centroids(l,1) = centroids(l,1)/objects(l); % lines' = sum(lines)/area
+        centroids(l,2) = centroids(l,2)/objects(l); % columns' = sum(columns)/area
+        pathing(1, frameNumb, l) = centroids(l,1);
+        pathing(2, frameNumb, l) = centroids(l,2);
+    end
 
-        %imshow(img); hold on;
-        %takes image and returns a gray version. Colours are then used for
-        %trajectory "breadcrumb" trails
-        imagesc(uint8(vid3D(:, :, k))); colormap gray; hold on;
-        axis off;
-        
-        %trajectory plotted on the image
-        for a = 1 : num
-            x_plot = [];
-            y_plot = [];
-            
-            for j = 1 : frameNumb
-                if pathing(1, j, a) > 0
+    %imshow(img); hold on;
+    %takes image and returns a gray version. Colours are then used for
+    %trajectory "breadcrumb" trails
+    imagesc(uint8(vid3D(:, :, k))); colormap gray; hold on;
+    axis off;
+
+    %trajectory plotted on the image
+    for a = 1 : num
+        x_plot = [];
+        y_plot = [];
+        for j = 1 : frameNumb
+            if pathing(1, j, a) > 0
                     x_plot = [ x_plot pathing(1, j, a) ];
-                else
-                    x_plot = [ x_plot nan ];    
-                end
-                
-                if pathing(2, j, a) > 0
-                    y_plot = [ y_plot pathing(2, j, a) ];
-                else
-                    y_plot = [ y_plot nan ];
-                end
+            else
+                x_plot = [ x_plot nan ];    
             end
-             
 
-            plot(y_plot, x_plot, '.', 'MarkerSize', 15);
-  
-            %drawn result
-            drawnow;
+            if pathing(2, j, a) > 0
+                y_plot = [ y_plot pathing(2, j, a) ];
+            else
+                y_plot = [ y_plot nan ];
+            end
         end
-        hold off;
-        frameNumb = frameNumb + 1;
-        k = k + 1;
+        plot(y_plot, x_plot, '.', 'MarkerSize', 15);
+        drawnow;
+    end
 end
+
+        
+
