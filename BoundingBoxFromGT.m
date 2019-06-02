@@ -1,7 +1,7 @@
 clear all, close all
 
-img = imread('img1/000001.jpg');
-fid = fopen('gt/gt.txt');
+img = imread('3DMOT2015/train/PETS09-S2L1/img1/000001.jpg');
+fid = fopen('3DMOT2015/train/PETS09-S2L1/gt/gt.txt');
 tline = fgets(fid);
 
 baseNum = 1;
@@ -20,7 +20,7 @@ disp(f);
 
 
 for i = 1:seqLength
-    imgfr = imread(sprintf('img1/%.6d.jpg',i));
+    imgfr = imread(sprintf('3DMOT2015/train/PETS09-S2L1/img1/%.6d.jpg',i));
     imshow(imgfr);
     while f == i
         
