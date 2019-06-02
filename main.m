@@ -109,8 +109,7 @@ for i = 1 : step : trainF
 end
 
 figure(3);
-plot( precisions, recalls );
-drawnow;
+scatter(recalls, precisions);
 
 
 for i = trainF : step : totalF
