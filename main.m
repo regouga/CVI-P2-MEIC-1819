@@ -4,12 +4,21 @@ totalFrames = 795;
 step = 1;
 currentFrame = 1;
 k = 1;
-threshold = 10;
+threshold = 50;
 previous_bw = zeros([576 768]);
+alfa = 0.01; % Background computation
 
 
 vid3D = zeros([576 768 totalFrames/step]);
 bkg = zeros(576, 768);
+
+
+for i = 1 : step : 500
+        img = imread(sprintf('3DMOT2015/train/PETS09-S2L1/img1/%.6d.jpg',i));
+        vid3D(:,:,k) = rgb2gray(img);
+        bkg = alfa * double(vid3D(:,:,k)) + (1-alfa) * double(bkg);
+        k = k + 1;
+end
 
 for i = 1 : step : totalFrames
         img = imread(sprintf('3DMOT2015/train/PETS09-S2L1/img1/%.6d.jpg',i));
@@ -29,8 +38,7 @@ for i = 1 : step : totalFrames
         
 
         [lb, num]= bwlabel(bw_image);
-        figure;
-        imshow(bw_image);
+        disp(num)
         stats = regionprops(lb);
         objects = [stats.Area];
 
