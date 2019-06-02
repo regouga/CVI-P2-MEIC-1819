@@ -115,21 +115,22 @@ figure(3);
 scatter(recalls, precisions,'filled'),axis([0 1 0 1]),xlabel('Recall'),ylabel('Precision'),title('Precision - Recall Curve');
 
 th = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.40, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1];
-sum = [];
+sumt = [];
 sum2 = 0;
 
-for b = 1 : size(th)
+for b = 1 : length(th)
     sum2 = 0;
-    for c = 1 : size(ious)
+    for c = 1 : length(ious)
         if ious(c) > th(b)
             sum2 = sum2 + 1;
         end    
     end
-    sum(end+1) = sum2;
+    sumt = [ sumt ; sum2 ];
+    disp(sumt);
 end
 
 figure(2);
-bar(th, (sum / size(ious))*100),xlabel('Thresholds'),ylabel('Percentage'),title('Success Plot');
+bar(th, (sumt / length(ious))*100),xlabel('Thresholds'),ylabel('Percentage'),title('Success Plot');
 
 
 
